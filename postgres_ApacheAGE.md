@@ -28,11 +28,11 @@ docker ps
 Connect to the postgres cli running on the container
 
 ```
-docker exec -it myPostgresDb bash
+docker exec -it postgres-age-container bash
 ```
 
 ```
-psql -d postgresDB -U postgresUser
+psql -d postgresDB -U postgres
 ```
 
 load the age extension
