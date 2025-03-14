@@ -1,0 +1,8 @@
+# Virtual Environments
+venv/
+
+#Docker
+Dockerfile
+
+# Python
+__pycache__/
