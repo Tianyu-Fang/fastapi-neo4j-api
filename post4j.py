@@ -8,6 +8,7 @@ import psycopg2
 import os
 import json
 from dataclasses import dataclass
+import collections
 
 
 class GraphDatabase:
@@ -30,12 +31,14 @@ class QueryExecutionSummary:
     summary_notifications = []
 
 
-@dataclass
-class QueryExecutionResult:
-    # for record in records: print(record.data())  # obtain record as dict
-    records = None
-    summary = QueryExecutionSummary()
-    keys = None
+QueryExecutionResult = collections.namedtuple("QueryExecutionResult", ["records", "summary", "keys"])
+
+# @dataclass
+# class QueryExecutionResult:
+#     # for record in records: print(record.data())  # obtain record as dict
+#     records = None
+#     summary = QueryExecutionSummary()
+#     keys = None
 
 
 class GraphDatabaseDriver:
@@ -75,6 +78,12 @@ class GraphDatabaseDriver:
             port=self.port,
         )
         self.cursor = self.conn.cursor()
+    
+        # self.cursor.execute("LOAD 'age';")
+        # self.cursor.execute("SET search_path TO ag_catalog, \"$user\", public;")
+        # self.cursor.execute("SELECT create_graph('my_graph');")
+        # self.conn.commit()
+
         return self
     
     def __exit__(self, exception_type, exception_value, exception_traceback):
@@ -93,7 +102,7 @@ class GraphDatabaseDriver:
             query = query.replace(f"${v}", f"\"{arg}\"")
         
         database = kwargs["database_"]
-        translated_query = f"SELECT * FROM ag_catalog.cypher('{database}', $$ {query} $$) AS (result agtype);"
+        translated_query = f"SELECT * FROM ag_catalog.cypher('my_graph', $$ {query} $$) AS (result agtype);"
 
         try:
             # Load AGE and set search_path
@@ -112,11 +121,13 @@ class GraphDatabaseDriver:
                     parsed_json = json.loads(clean_item)  # Convert string to dictionary
                     formatted_results.append(parsed_json)
 
-            summary = QueryExecutionSummary(query=query)
-            result = QueryExecutionResult(summary)
-
             print({"results": formatted_results})
-            return result
+
+            records = []
+            summary = QueryExecutionSummary()
+            keys = []
+
+            return QueryExecutionResult(records, summary, keys)
 
         except Exception as e:
             print(f"Error! {e}")
