@@ -74,12 +74,7 @@ class GraphDatabaseDriver:
             host=self.host,
             port=self.port,
         )
-        print("Connection success!")
         self.cursor = self.conn.cursor()
-        print("Cursor success!")
-        # Load AGE and set search_path
-        self.cursor.execute("LOAD 'age';")
-        self.cursor.execute("SET search_path TO ag_catalog, \"$user\", public;")
         return self
     
     def __exit__(self, exception_type, exception_value, exception_traceback):
@@ -88,31 +83,23 @@ class GraphDatabaseDriver:
         self.conn = None
     
     def verify_connectivity(self):
-        print("Todo: Verify connectivity")
-        # execute an example query, see if it returns 
-        pass
+        self.cursor.execute("LOAD 'age';")
+        self.cursor.execute("SET search_path TO ag_catalog, \"$user\", public;")
+        self.conn.commit()
 
     def execute_query(self, query, **kwargs):
         # Fill params
-        print("Todo: Parameter filling")
-        query = query
-
-        new_query = ""
-        in_param = True
-        for part in re.split(" ", query):
-            in_param = not in_param
-            
-            if in_param:
-                part = 
-            
-            new_query += part
-        query = new_query
-
+        for v, arg in kwargs.items():
+            query = query.replace(f"${v}", f"\"{arg}\"")
         
         database = kwargs["database_"]
         translated_query = f"SELECT * FROM ag_catalog.cypher('{database}', $$ {query} $$) AS (result agtype);"
 
         try:
+            # Load AGE and set search_path
+            self.cursor.execute("LOAD 'age';")
+            self.cursor.execute("SET search_path TO ag_catalog, \"$user\", public;")
+            
             self.cursor.execute(translated_query)
             raw_results = self.cursor.fetchall()
             self.conn.commit()
@@ -132,5 +119,6 @@ class GraphDatabaseDriver:
             return result
 
         except Exception as e:
+            print(f"Error! {e}")
             self.conn.rollback()
             return {"error": str(e)}
