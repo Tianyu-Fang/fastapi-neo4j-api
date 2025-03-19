@@ -17,7 +17,7 @@ class GraphDatabase:
 
 
 @dataclass
-class QueryExecutionSummary:
+class QueryExecutionResultSummary:
     query = None
     counters = {
         "_contains_updates": False,
@@ -31,14 +31,16 @@ class QueryExecutionSummary:
     summary_notifications = []
 
 
-QueryExecutionResult = collections.namedtuple("QueryExecutionResult", ["records", "summary", "keys"])
 
-# @dataclass
-# class QueryExecutionResult:
-#     # for record in records: print(record.data())  # obtain record as dict
-#     records = None
-#     summary = QueryExecutionSummary()
-#     keys = None
+class QueryExecutionResultRecord:
+    def __init__(self, inner):
+        self.inner = inner
+
+    def data(self):
+        return self.inner
+
+
+QueryExecutionResult = collections.namedtuple("QueryExecutionResult", ["records", "summary", "keys"])
 
 
 class GraphDatabaseDriver:
@@ -112,24 +114,24 @@ class GraphDatabaseDriver:
             self.cursor.execute(translated_query)
             raw_results = self.cursor.fetchall()
             self.conn.commit()
-
-            # Clean up the results (remove "::vertex" and parse JSON)
-            formatted_results = []
-            for row in raw_results:
-                for item in row:
-                    clean_item = item.replace("::vertex", "")  # Remove "::vertex"
-                    parsed_json = json.loads(clean_item)  # Convert string to dictionary
-                    formatted_results.append(parsed_json)
-
-            print({"results": formatted_results})
-
-            records = []
-            summary = QueryExecutionSummary()
-            keys = []
-
-            return QueryExecutionResult(records, summary, keys)
-
+        
         except Exception as e:
             print(f"Error! {e}")
             self.conn.rollback()
             return {"error": str(e)}
+
+        # Clean up the results (remove "::vertex" and parse JSON)
+        formatted_results = []
+        for row in raw_results:
+            for item in row:
+                clean_item = item.replace("::vertex", "")  # Remove "::vertex"
+                parsed_json = json.loads(clean_item)  # Convert string to dictionary
+                formatted_results.append(parsed_json)
+
+        # I haven't yet tested what it should do if more than id is requested
+        records = [QueryExecutionResultRecord({"id": r}) for r in formatted_results]
+        summary = QueryExecutionResultSummary()
+        summary.query = query
+        keys = [] # list of queried attributes, not important for now
+
+        return QueryExecutionResult(records, summary, keys)
