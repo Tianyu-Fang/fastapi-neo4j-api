@@ -31,7 +31,6 @@ class QueryExecutionResultSummary:
     summary_notifications = []
 
 
-
 class QueryExecutionResultRecord:
     def __init__(self, inner):
         self.inner = inner
@@ -71,7 +70,7 @@ class GraphDatabaseDriver:
         self.cursor = None
     
     def __enter__(self):
-        print(f"Connecting to {self.host}:{self.port} database {self.dbname} as {self.user} with password {self.password}")
+        # print(f"Connecting to {self.host}:{self.port} database {self.dbname} as {self.user} with password {self.password}")
         self.conn = psycopg2.connect(
             dbname=self.dbname,
             user=self.user,
